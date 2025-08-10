@@ -1,5 +1,12 @@
 #![doc = include_str!("../README.md")]
-use std::{cmp::Ordering, ffi::{CStr, CString, OsStr, OsString}, fmt::{self}, hash::{Hash, Hasher}, ops::Deref, path::{Path, PathBuf}};
+use std::{
+    cmp::Ordering,
+    ffi::{CStr, CString, OsStr, OsString},
+    fmt::{self},
+    hash::{Hash, Hasher},
+    ops::Deref,
+    path::{Path, PathBuf},
+};
 
 #[cfg(feature = "serde")]
 mod serde;
@@ -32,7 +39,8 @@ impl<T: ?Sized> Deref for Leak<T> {
 }
 
 impl<T: ?Sized, R: ?Sized> AsRef<R> for Leak<T>
-where for <'a> &'a T: AsRef<R>
+where
+    for<'a> &'a T: AsRef<R>,
 {
     fn as_ref(&self) -> &R {
         self.0.as_ref()
@@ -115,7 +123,7 @@ impl<T: ?Sized + fmt::Display> fmt::Display for Leak<T> {
 impl<T> Default for Leak<[T]> {
     fn default() -> Self {
         Self(Default::default())
-    } 
+    }
 }
 
 impl Default for Leak<str> {
@@ -135,7 +143,6 @@ impl Default for Leak<OsStr> {
         Self(Default::default())
     }
 }
-
 
 // -----------------------------------------------------------------------------
 // Leaker implementations
@@ -183,12 +190,16 @@ impl From<CString> for Leak<CStr> {
 
 #[cfg(test)]
 mod test {
-    use std::{ffi::{CStr, OsStr}, mem, path::Path};
-    use serde::{Deserialize, Serialize};
     use crate::Leak;
+    use serde::{Deserialize, Serialize};
+    use std::{
+        ffi::{CStr, OsStr},
+        mem,
+        path::Path,
+    };
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
-    struct LeakEverything (
+    struct LeakEverything(
         Leak<()>,
         Leak<u8>,
         Leak<[u8]>,
@@ -199,7 +210,7 @@ mod test {
         Leak<[Leak<str>]>,
         Leak<Cake>,
         Leak<[Cake]>,
-        Leak<[Leak<[Cake]>]>
+        Leak<[Leak<[Cake]>]>,
     );
 
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
