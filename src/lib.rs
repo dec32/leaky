@@ -68,6 +68,17 @@ impl<T: ?Sized + PartialEq> PartialEq for Leak<T> {
     }
 }
 
+impl<T: ?Sized + PartialEq> PartialEq<&T> for Leak<T> {
+    #[inline]
+    fn eq(&self, other: &&T) -> bool {
+        PartialEq::eq(self.0, other)
+    }
+    #[inline]
+    fn ne(&self, other: &&T) -> bool {
+        PartialEq::ne(self.0, other)
+    }
+}
+
 impl<T: ?Sized + Ord> Ord for Leak<T> {
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
@@ -222,6 +233,7 @@ mod test {
     fn it_works() {
         as_ref();
         as_null();
+        eq();
     }
 
     fn as_ref() -> impl AsRef<Path> {
@@ -232,5 +244,11 @@ mod test {
     fn as_null() {
         let none = Option::<Leak<str>>::None;
         assert_eq!(none, unsafe { mem::zeroed() })
+    }
+
+    fn eq() {
+        let str = "hello world";
+        let leak: Leak<str> = String::from(str).into();
+        assert_eq!(leak, str);
     }
 }
