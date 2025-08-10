@@ -3,6 +3,7 @@ use std::{ffi::{CStr, CString, OsStr, OsString}, fmt::{Debug, Display}, ops::Der
 
 #[cfg(feature = "serde")]
 mod serde;
+mod str;
 
 // -----------------------------------------------------------------------------
 // Core types and implementations
