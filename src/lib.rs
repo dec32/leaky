@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-use std::{ffi::{CStr, CString, OsStr, OsString}, fmt::{Debug, Display}, ops::Deref, path::{Path, PathBuf}};
+use std::{cmp::Ordering, ffi::{CStr, CString, OsStr, OsString}, fmt::{self}, hash::{Hash, Hasher}, ops::Deref, path::{Path, PathBuf}};
 
 #[cfg(feature = "serde")]
 mod serde;
@@ -15,7 +15,6 @@ mod str;
 /// a clear semantic distinction for leaked values. For a detailed explanation of
 /// this type's purpose and how it addresses common deserialization challenges,
 /// please refer to the [crate-level documentation](crate).
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Leak<T: ?Sized + 'static>(&'static T);
 
 impl<T> Leak<T> {
@@ -40,25 +39,78 @@ where for <'a> &'a T: AsRef<R>
     }
 }
 
+impl<T: ?Sized> Copy for Leak<T> {}
+
 impl<T: ?Sized> Clone for Leak<T> {
     fn clone(&self) -> Self {
         Self(self.0)
     }
 }
 
-impl<T: ?Sized> Copy for Leak<T> {}
+impl<T: ?Sized + Eq> Eq for Leak<T> {}
 
-impl<T: ?Sized + Debug> Debug for Leak<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(&self.0, f)
+impl<T: ?Sized + PartialEq> PartialEq for Leak<T> {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        PartialEq::eq(&**self, &**other)
+    }
+    #[inline]
+    fn ne(&self, other: &Self) -> bool {
+        PartialEq::ne(&**self, &**other)
     }
 }
 
-impl<T: ?Sized + Display> Display for Leak<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self.0, f)
+impl<T: ?Sized + Ord> Ord for Leak<T> {
+    #[inline]
+    fn cmp(&self, other: &Self) -> Ordering {
+        Ord::cmp(&**self, &**other)
     }
 }
+
+impl<T: ?Sized + PartialOrd> PartialOrd for Leak<T> {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        PartialOrd::partial_cmp(&**self, &**other)
+    }
+    #[inline]
+    fn lt(&self, other: &Self) -> bool {
+        PartialOrd::lt(&**self, &**other)
+    }
+    #[inline]
+    fn le(&self, other: &Self) -> bool {
+        PartialOrd::le(&**self, &**other)
+    }
+    #[inline]
+    fn ge(&self, other: &Self) -> bool {
+        PartialOrd::ge(&**self, &**other)
+    }
+    #[inline]
+    fn gt(&self, other: &Self) -> bool {
+        PartialOrd::gt(&**self, &**other)
+    }
+}
+
+impl<T: ?Sized + Hash> Hash for Leak<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        (**self).hash(state);
+    }
+}
+
+impl<T: ?Sized + fmt::Debug> fmt::Debug for Leak<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self.0, f)
+    }
+}
+
+impl<T: ?Sized + fmt::Display> fmt::Display for Leak<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Implementations of `Default` for `Leak<T>` where `T` is a slice type.
+// -----------------------------------------------------------------------------
 
 impl<T> Default for Leak<[T]> {
     fn default() -> Self {
